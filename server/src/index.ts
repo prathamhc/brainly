@@ -2,8 +2,10 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { z } from "zod";
-import { UserModel } from "./db.js";
+import { ContentModel, UserModel } from "./db.js";
 import { JWT_PASSWORD } from "./config.js";
+import { userMiddleware } from "./middleware.js";
+import mongoose from "mongoose";
 
 const app = express();
 app.use(express.json())
@@ -42,8 +44,8 @@ app.post("/api/v1/signup", async (req, res) => {
     catch (err) {
         res.status(500).json({ message: "Internal server error" });
     }
-
 })
+
 app.post("/api/v1/signin", async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -74,13 +76,40 @@ app.post("/api/v1/signin", async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 })
-app.post("/api/v1/content", (req, res) => {
+app.post("/api/v1/content", userMiddleware, async (req, res) => {
+    const link = req.body.link;
+    const title = req.body.title;
 
-})
-app.get("/api/v1/content", (req, res) => {
+    await ContentModel.create({
+        title,
+        link,
+        userId: new mongoose.Types.ObjectId(req.userId),
+        tags: []
+    })
 
+    return res.status(200).json({
+        message: "Content added successfully"
+    })
 })
-app.delete("/api/v1/content", (req, res) => {
+app.get("/api/v1/content", userMiddleware, async (req, res) => {
+    const userId = req.userId;
+    const content = await ContentModel.find({ userId: new mongoose.Types.ObjectId(req.userId) }).populate("userId", "username");
+
+    return res.status(200).json({
+        content
+    })
+})
+app.delete("/api/v1/content", userMiddleware, async (req, res) => {
+    const contentId = req.body.contentId;
+
+    const content = await ContentModel.deleteMany({
+        contentId: new mongoose.Types.ObjectId(contentId),
+        userId: new mongoose.Types.ObjectId(req.userId)
+    })
+
+    return res.status(200).json({
+        message: "Content deleted successfully"
+    })
 
 })
 app.post("/api/v1/brain/share", (req, res) => {
