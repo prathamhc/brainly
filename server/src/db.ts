@@ -1,5 +1,6 @@
 import mongoose, { model, Schema } from "mongoose";
 import { MONGO_URL } from "./config.js";
+import { required } from "zod/mini";
 
 mongoose.connect(MONGO_URL);
 
@@ -8,4 +9,12 @@ const UserSchema = new Schema({
     password: String,
 })
 
-export const UserModel = model("User", UserSchema); 
+export const UserModel = model("User", UserSchema);
+
+const ContentSchema = new Schema({
+    title: String,
+    link: String,
+    tags: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
+    userId: { type: mongoose.Types.ObjectId, ref: "User", required: true }
+})
+export const ContentModel = model("Content", ContentSchema);
